@@ -1,11 +1,12 @@
 [tool.poetry]
 name = "clipboard-watcher"
-version = "0.1.0"
-description = ""
+version = "0.0.1"
+description = "Monitors the access of other processes to the clipboard contents."
 authors = ["Gonçalo Valério <gon@ovalerio.net>"]
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = ">=3.9,<3.11"
+python-xlib = "^0.31"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
