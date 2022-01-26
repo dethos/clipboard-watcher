@@ -17,7 +17,7 @@ To build and run this demo app, you will need to have the following libraries
 on your system:
 
 * ``libdbus-1-dev``
-* ```libglib2.0-dev```
+* ``libglib2.0-dev``
 
 You will also need to have `Poetry <http://www.python.org/>`_ in order to be
 able to execute the following commands:
