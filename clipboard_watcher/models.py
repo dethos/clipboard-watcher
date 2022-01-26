@@ -6,7 +6,7 @@ from Xlib import X
 
 from .xoperations import get_selection_data, get_selection_targets
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("ClipboardWatcher")
 
 
 @dataclass

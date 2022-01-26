@@ -1,14 +1,15 @@
 import logging
 from typing import List, Optional, Tuple
+from queue import Queue
 
 from Xlib import X, Xatom
 from Xlib.protocol import event
 
-
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("ClipboardWatcher")
 
 
 def get_selection_targets(disp, win, selection: str) -> List[str]:
+    """Query a selection owner for a list of all available targets."""
     data_info = get_selection_data(disp, win, selection, "TARGETS")
     if not data_info or data_info[1] != 32 and data_info[2] != Xatom.ATOM:
         return []
@@ -18,7 +19,7 @@ def get_selection_targets(disp, win, selection: str) -> List[str]:
 
 
 def get_selection_data(disp, win, selection: str, target: str) -> Optional[Tuple]:
-    """Get information from a particular selection."""
+    """Retrieve the data for a given target from the selection owner."""
     sel_atom = disp.get_atom(selection)
     target_atom = disp.get_atom(target)
     data_atom = disp.get_atom("SEL_DATA")
@@ -29,8 +30,6 @@ def get_selection_data(disp, win, selection: str, target: str) -> Optional[Tuple
         logger.info("No owner for selection %s", selection)
         return
 
-    # Ask for the selection.  We shouldn't use X.CurrentTime, but
-    # since we don't have an event here we have to.
     win.convert_selection(sel_atom, target_atom, data_atom, X.CurrentTime)
 
     # Wait for the notification that we got the selection
@@ -44,7 +43,7 @@ def get_selection_data(disp, win, selection: str, target: str) -> Optional[Tuple
         logger.info("SelectionNotify event does not match our request: %s", e)
 
     if e.property == X.NONE:
-        logger.info("selection lost or conversion to TEXT failed")
+        logger.info("Selection lost or conversion to TEXT failed")
         return
 
     if e.property != data_atom:
@@ -57,7 +56,7 @@ def get_selection_data(disp, win, selection: str, target: str) -> Optional[Tuple
 
     # Can the data be used directly or read incrementally
     if r.property_type == disp.get_atom("INCR"):
-        logger.info("reading data incrementally: at least %d bytes", r.value[0])
+        logger.info("Reading data incrementally: at least %d bytes", r.value[0])
         data = _handle_incr(disp, win, data_atom)
     else:
         data = r.value
@@ -68,17 +67,13 @@ def get_selection_data(disp, win, selection: str, target: str) -> Optional[Tuple
 
 
 def _handle_incr(d, w, data_atom):
-    # This works by us removing the data property, the selection owner
-    # getting a notification of that, and then setting the property
-    # again with more data.  To notice that, we must listen for
-    # PropertyNotify events.
+    """Handle the selection's data, when it is provided in chunks"""
     w.change_attributes(event_mask=X.PropertyChangeMask)
     data = None
 
     while True:
         # Delete data property to tell owner to give us more data
         w.delete_property(data_atom)
-
         # Wait for notification that we got data
         while True:
             e = d.next_event()
@@ -110,7 +105,7 @@ def process_selection_request_event(d, cb_data, e):
 
     if e.property == X.NONE:
         logger.info("request from obsolete client!")
-        client_prop = e.target  # per ICCCM recommendation
+        client_prop = e.target
     else:
         client_prop = e.property
 
@@ -193,7 +188,7 @@ def process_selection_request_event(d, cb_data, e):
 
 
 def process_selection_clear_event(d, cb_data, e):
-    logger.warning("New content on %s, assuming ownership", e.atom)
+    logger.warning("New content on %s, assuming ownership", d.get_atom_name(e.atom))
     if e.atom == d.get_atom("PRIMARY"):
         cb_data.refresh_primary()
     elif e.atom == d.get_atom("CLIPBOARD"):
@@ -204,15 +199,33 @@ def process_selection_clear_event(d, cb_data, e):
     logger.warning("Owner again")
 
 
-def process_event_loop(d, w, cb_data):
-    running = True
-    while running:
+def process_event_loop(d, w, q: Queue, cb_data):
+    while True:
         e = d.next_event()
         if (
             e.type == X.SelectionRequest
             and e.owner == w
             and e.selection in cb_data.name_atoms(d)
         ):
+            req_id = e.requestor.id
+            req_name = e.requestor.get_wm_name()
+            req_pid = e.requestor.get_property(
+                d.get_atom("_NET_WM_PID"), d.get_atom("CARDINAL"), 0, 1024
+            )
+            extra = d.get_atom_name(e.property)
             process_selection_request_event(d, cb_data, e)
+            if d.get_atom_name(e.target) != "TARGETS":
+                q.put(
+                    {
+                        "id": req_id,
+                        "window_name": req_name,
+                        "pid": req_pid,
+                        "target": d.get_atom_name(e.target),
+                        "selection": d.get_atom_name(e.selection),
+                        "extra": extra,
+                    },
+                    block=False,
+                )
+
         elif e.type == X.SelectionClear and e.window == w:
             process_selection_clear_event(d, cb_data, e)

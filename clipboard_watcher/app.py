@@ -1,19 +1,31 @@
 import logging
 import sys
 from argparse import ArgumentParser
+from threading import Thread
+from queue import Queue
 
 from Xlib import X, display
 
 from .models import ClipboardData
 from .xoperations import process_event_loop
+from .notifications import display_desktop_notification
 
 
-logger = logging.getLogger()
+logger = logging.getLogger("ClipboardWatcher")
 
 
 def set_logger_settings(level_name: str) -> None:
     level = logging.getLevelName(level_name)
     logging.basicConfig(stream=sys.stdout, level=level)
+
+
+def process_notifications(q: Queue):
+    while True:
+        req = q.get(block=True)
+        display_desktop_notification(
+            f"New access to {req['selection']}({req['target']}) detected.",
+            f"Window: {req['window_name']} (id: {req['id']})\nPossible PID: {req['pid']} | Extra Info: {req['extra']}",
+        )
 
 
 def main() -> None:
@@ -25,21 +37,39 @@ def main() -> None:
     if args.loglevel and args.loglevel in ["DEBUG", "INFO", "WARNING", "ERROR"]:
         set_logger_settings(args.loglevel)
     else:
-        set_logger_settings("WARNING")
+        set_logger_settings("INFO")
 
-    logger.info("Initializing Xclient")
-    d = display.Display()
+    logger.info("Initializing X client")
+    disp = display.Display()
     # Create ourselves a window and a property for the returned data
-    w = d.screen().root.create_window(0, 0, 10, 10, 0, X.CopyFromParent)
-    w.set_wm_name("clipboard_watcher")
+    window = disp.screen().root.create_window(0, 0, 10, 10, 0, X.CopyFromParent)
+    window.set_wm_name("clipboard_watcher")
 
     logger.debug("Getting selection data")
-    cb_data = ClipboardData(d, w, {}, {})
+    cb_data = ClipboardData(disp, window, {}, {})
     cb_data.refresh_all()
     logger.debug("Taken ownership of all selections")
 
-    logger.info("Will start processing requests")
-    process_event_loop(d, w, cb_data)
+    job_queue = Queue()
+    # Thread 1
+    event_worker = Thread(
+        target=process_event_loop, args=(disp, window, job_queue, cb_data), daemon=True
+    )
+    # Thread 2
+    notif_worker = Thread(
+        target=process_notifications,
+        args=(job_queue,),
+        daemon=True,
+    )
+
+    event_worker.start()
+    notif_worker.start()
+    logger.info("Setup done. Keeping an eye on the clipboard")
+    try:
+        event_worker.join()
+        notif_worker.join()
+    except KeyboardInterrupt:
+        logger.info("Shutting down")
 
 
 if __name__ == "__main__":
