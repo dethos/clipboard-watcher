@@ -3,6 +3,7 @@ from typing import List, Optional, Tuple
 from queue import Queue
 
 from Xlib import X, Xatom
+from Xlib.ext.res import query_client_ids, LocalClientPIDMask
 from Xlib.protocol import event
 
 logger = logging.getLogger("ClipboardWatcher")
@@ -213,6 +214,11 @@ def process_event_loop(d, w, q: Queue, cb_data):
                 d.get_atom("_NET_WM_PID"), d.get_atom("CARDINAL"), 0, 1024
             )
             extra = d.get_atom_name(e.property)
+            client_ids = query_client_ids(d, [(e.requestor.id, LocalClientPIDMask)])
+            client_id = client_ids.ids[0]
+            if client_id.spec.mask & LocalClientPIDMask:
+                req_pid = client_id.value[0]
+                print(req_pid)
             process_selection_request_event(d, cb_data, e)
             if d.get_atom_name(e.target) != "TARGETS":
                 q.put(
