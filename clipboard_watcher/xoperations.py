@@ -1,3 +1,15 @@
+"""X Operations Module
+
+This module abstracts some of the functionality of Xlib into
+easy to use functions.
+
+The current functionality contains:
+* Querying the existing clipboard targets
+* Fetching existing clipboard data
+* Processing requests for clipboard data
+* Handling the loss of ownership on any clipboard data
+"""
+
 import logging
 from typing import List, Optional, Tuple
 from queue import Queue
@@ -5,6 +17,8 @@ from queue import Queue
 from Xlib import X, Xatom
 from Xlib.ext.res import query_client_ids, LocalClientPIDMask
 from Xlib.protocol import event
+
+from .process_info import ProcessInfo
 
 logger = logging.getLogger("ClipboardWatcher")
 
@@ -67,7 +81,7 @@ def get_selection_data(disp, win, selection: str, target: str) -> Optional[Tuple
     return (data, r.format, r.property_type)
 
 
-def _handle_incr(d, w, data_atom):
+def _handle_incr(d, w, data_atom) -> bytes:
     """Handle the selection's data, when it is provided in chunks"""
     w.change_attributes(event_mask=X.PropertyChangeMask)
     data = None
@@ -99,7 +113,7 @@ def _handle_incr(d, w, data_atom):
         data += r.value
 
 
-def process_selection_request_event(d, cb_data, e):
+def process_selection_request_event(d, cb_data, e) -> None:
     logger.debug("Selection %s request from %s", e.selection, e.requestor.get_wm_name())
     client = e.requestor
     targets_atom = d.get_atom("TARGETS")
@@ -188,7 +202,7 @@ def process_selection_request_event(d, cb_data, e):
     )
 
 
-def process_selection_clear_event(d, cb_data, e):
+def process_selection_clear_event(d, cb_data, e) -> None:
     logger.warning("New content on %s, assuming ownership", d.get_atom_name(e.atom))
     if e.atom == d.get_atom("PRIMARY"):
         cb_data.refresh_primary()
@@ -200,7 +214,7 @@ def process_selection_clear_event(d, cb_data, e):
     logger.warning("Owner again")
 
 
-def process_event_loop(d, w, q: Queue, cb_data):
+def process_event_loop(d, w, q: Queue, cb_data) -> None:
     while True:
         e = d.next_event()
         if (
@@ -210,25 +224,28 @@ def process_event_loop(d, w, q: Queue, cb_data):
         ):
             req_id = e.requestor.id
             req_name = e.requestor.get_wm_name()
+            client_ids = query_client_ids(d, [(e.requestor.id, LocalClientPIDMask)])
+            client_id = client_ids.ids[0]
+
             req_pid = e.requestor.get_property(
                 d.get_atom("_NET_WM_PID"), d.get_atom("CARDINAL"), 0, 1024
             )
-            extra = d.get_atom_name(e.property)
-            client_ids = query_client_ids(d, [(e.requestor.id, LocalClientPIDMask)])
-            client_id = client_ids.ids[0]
             if client_id.spec.mask & LocalClientPIDMask:
                 req_pid = client_id.value[0]
-                print(req_pid)
+
+            # We must collect this information before processing the request
+            # due to the risk of the requestor no longer be running afterwards
+            proc_info = ProcessInfo.collect(req_pid) if req_pid else None
+
             process_selection_request_event(d, cb_data, e)
             if d.get_atom_name(e.target) != "TARGETS":
                 q.put(
                     {
                         "id": req_id,
                         "window_name": req_name,
-                        "pid": req_pid,
+                        "process": proc_info,
                         "target": d.get_atom_name(e.target),
                         "selection": d.get_atom_name(e.selection),
-                        "extra": extra,
                     },
                     block=False,
                 )

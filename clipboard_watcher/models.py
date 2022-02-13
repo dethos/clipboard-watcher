@@ -1,3 +1,5 @@
+"""Structures to store the existing clipboard data"""
+
 from dataclasses import dataclass
 from typing import Optional, Any, Dict, List
 import logging

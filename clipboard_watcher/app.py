@@ -1,3 +1,7 @@
+"""Main script to execute the application
+
+This module provides the entrypoint to CLI app/script
+"""
 import logging
 import sys
 from argparse import ArgumentParser
@@ -22,9 +26,15 @@ def set_logger_settings(level_name: str) -> None:
 def process_notifications(q: Queue):
     while True:
         req = q.get(block=True)
+        window_info = f"Window info: {req['window_name']} (id: {req['id']})"
+        if process := req.get("process"):
+            process_info = f"Process info: {process.path} (pid: {process.pid})"
+        else:
+            process_info = "Process info: Unknown"
+
         display_desktop_notification(
-            f"New access to {req['selection']}({req['target']}) detected.",
-            f"Window: {req['window_name']} (id: {req['id']})\nPossible PID: {req['pid']} | Extra Info: {req['extra']}",
+            f"Access to Clipboard ({req['selection']}) detected.",
+            f"{window_info}\n{process_info}",
         )
 
 
