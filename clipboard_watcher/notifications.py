@@ -1,16 +1,12 @@
-import dbus
+from desktop_notifier import DesktopNotifier
 import logging
 
 logger = logging.getLogger("ClipboardWatcher")
+notifier = DesktopNotifier(app_name="Clipboard-Watcher", app_icon=None)
 
 
-def display_desktop_notification(title: str, details: str = "", icon: str = "") -> None:
-    interface = "org.freedesktop.Notifications"
-    path = "/org/freedesktop/Notifications"
-    notification = dbus.Interface(
-        dbus.SessionBus().get_object(interface, path), interface
-    )
+def display_desktop_notification(title: str, details: str = "") -> None:
     try:
-        notification.Notify("Clipboard-Watcher", 0, icon, title, details, [], [], 7000)
+        notifier.send_sync(title=title, message=details)
     except Exception:
         logger.error("Unable to publish notification due to dbus error")

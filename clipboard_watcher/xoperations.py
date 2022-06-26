@@ -13,14 +13,18 @@ The current functionality contains:
 import logging
 from typing import List, Optional, Tuple
 from queue import Queue
+from collections import namedtuple
 
 from Xlib import X, Xatom
 from Xlib.ext.res import query_client_ids, LocalClientPIDMask
 from Xlib.protocol import event
 
+from clipboard_watcher.dialog import ask_for_permission
+
 from .process_info import ProcessInfo
 
 logger = logging.getLogger("ClipboardWatcher")
+FakeData = namedtuple("FakeData", ["primary", "clipboard"])
 
 
 def get_selection_targets(disp, win, selection: str) -> List[str]:
@@ -214,7 +218,7 @@ def process_selection_clear_event(d, cb_data, e) -> None:
     logger.warning("Owner again")
 
 
-def process_event_loop(d, w, q: Queue, cb_data) -> None:
+def process_event_loop(d, w, q: Queue, cb_data, permission=False) -> None:
     while True:
         e = d.next_event()
         if (
@@ -237,7 +241,15 @@ def process_event_loop(d, w, q: Queue, cb_data) -> None:
             # due to the risk of the requestor no longer be running afterwards
             proc_info = ProcessInfo.collect(req_pid) if req_pid else None
 
-            process_selection_request_event(d, cb_data, e)
+            if permission and d.get_atom_name(e.target) != "TARGETS":
+                if ask_for_permission(req_name, proc_info.pid, proc_info.path):
+                    data = cb_data
+                else:
+                    data = FakeData({}, {})
+            else:
+                data = cb_data
+
+            process_selection_request_event(d, data, e)
             if d.get_atom_name(e.target) != "TARGETS":
                 q.put(
                     {
