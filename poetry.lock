@@ -66,12 +66,30 @@ optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
 [[package]]
-name = "dbus-python"
-version = "1.2.18"
-description = "Python bindings for libdbus"
+name = "dbus-next"
+version = "0.2.3"
+description = "A zero-dependency DBus library for Python with asyncio support"
 category = "main"
 optional = false
-python-versions = "*"
+python-versions = ">=3.6.0"
+
+[[package]]
+name = "desktop-notifier"
+version = "3.4.0"
+description = "Python library for cross-platform desktop notifications"
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+dbus-next = {version = "*", markers = "sys_platform == \"linux\""}
+packaging = "*"
+rubicon-objc = {version = "*", markers = "sys_platform == \"darwin\""}
+winsdk = {version = "*", markers = "sys_platform == \"win32\""}
+
+[package.extras]
+dev = ["black", "bump2version", "flake8", "mypy", "pre-commit", "pytest", "pytest-cov"]
+docs = ["sphinx", "m2r2", "sphinx-autoapi", "sphinx-rtd-theme"]
 
 [[package]]
 name = "more-itertools"
@@ -93,7 +111,7 @@ python-versions = "*"
 name = "packaging"
 version = "21.3"
 description = "Core utilities for Python packages"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.6"
 
@@ -154,7 +172,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 name = "pyparsing"
 version = "3.0.6"
 description = "Python parsing module"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.6"
 
@@ -195,6 +213,14 @@ python-versions = "*"
 six = ">=1.10.0"
 
 [[package]]
+name = "rubicon-objc"
+version = "0.4.2"
+description = "A bridge between an Objective C runtime environment and Python."
+category = "main"
+optional = false
+python-versions = ">=3.5"
+
+[[package]]
 name = "six"
 version = "1.16.0"
 description = "Python 2 and 3 compatibility utilities"
@@ -226,10 +252,18 @@ category = "dev"
 optional = false
 python-versions = "*"
 
+[[package]]
+name = "winsdk"
+version = "1.0.0b6"
+description = "Python bindings for the Windows SDK"
+category = "main"
+optional = false
+python-versions = "*"
+
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.9,<3.11"
-content-hash = "5de6bab639719a04f7cf4b791199fabcec0f9c75e6bb12ce6039a299313a9f3c"
+content-hash = "fc4b2112388189c48f90187d3601f965cb6c402781eed13c0ccc4614cefc0bdd"
 
 [metadata.files]
 atomicwrites = [
@@ -252,8 +286,13 @@ colorama = [
     {file = "colorama-0.4.4-py2.py3-none-any.whl", hash = "sha256:9f47eda37229f68eee03b24b9748937c7dc3868f906e8ba69fbcbdd3bc5dc3e2"},
     {file = "colorama-0.4.4.tar.gz", hash = "sha256:5941b2b48a20143d2267e95b1c2a7603ce057ee39fd88e7329b0c292aa16869b"},
 ]
-dbus-python = [
-    {file = "dbus-python-1.2.18.tar.gz", hash = "sha256:92bdd1e68b45596c833307a5ff4b217ee6929a1502f5341bae28fd120acf7260"},
+dbus-next = [
+    {file = "dbus_next-0.2.3-py3-none-any.whl", hash = "sha256:58948f9aff9db08316734c0be2a120f6dc502124d9642f55e90ac82ffb16a18b"},
+    {file = "dbus_next-0.2.3.tar.gz", hash = "sha256:f4eae26909332ada528c0a3549dda8d4f088f9b365153952a408e28023a626a5"},
+]
+desktop-notifier = [
+    {file = "desktop-notifier-3.4.0.tar.gz", hash = "sha256:92b10dfe97ea5599adbe2c03520cae5a4343017c3bb1f1dc2256c17b224608a9"},
+    {file = "desktop_notifier-3.4.0-py3-none-any.whl", hash = "sha256:f7151171ef78b9c46bb3509eb80c95b5108d7b482e4c0215cbc44fe35a61a4f3"},
 ]
 more-itertools = [
     {file = "more-itertools-8.12.0.tar.gz", hash = "sha256:7dc6ad46f05f545f900dd59e8dfb4e84a4827b97b3cfecb175ea0c7d247f6064"},
@@ -329,6 +368,10 @@ python-xlib = [
     {file = "python-xlib-0.31.tar.gz", hash = "sha256:74d83a081f532bc07f6d7afcd6416ec38403d68f68b9b9dc9e1f28fbf2d799e9"},
     {file = "python_xlib-0.31-py2.py3-none-any.whl", hash = "sha256:1ec6ce0de73d9e6592ead666779a5732b384e5b8fb1f1886bd0a81cafa477759"},
 ]
+rubicon-objc = [
+    {file = "rubicon-objc-0.4.2.tar.gz", hash = "sha256:6fbc8e12bd66c84427cfb95634c4bd10ade356ae2b2ae0d2b51dcbf5810d2602"},
+    {file = "rubicon_objc-0.4.2-py3-none-any.whl", hash = "sha256:c8780b9d6c3c906642080a9f8b710f5823a498c17e9bbea7f70781ea6ede7962"},
+]
 six = [
     {file = "six-1.16.0-py2.py3-none-any.whl", hash = "sha256:8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254"},
     {file = "six-1.16.0.tar.gz", hash = "sha256:1e61c37477a1626458e36f7b1d82aa5c9b094fa4802892072e49de9c60c4c926"},
@@ -344,4 +387,15 @@ typing-extensions = [
 wcwidth = [
     {file = "wcwidth-0.2.5-py2.py3-none-any.whl", hash = "sha256:beb4802a9cebb9144e99086eff703a642a13d6a0052920003a230f3294bbe784"},
     {file = "wcwidth-0.2.5.tar.gz", hash = "sha256:c4d647b99872929fdb7bdcaa4fbe7f01413ed3d98077df798530e5b04f116c83"},
+]
+winsdk = [
+    {file = "winsdk-1.0.0b6-cp310-cp310-win32.whl", hash = "sha256:3589f0535d159b6e64f25e9688adc7896acc01bfa0f0f1e3d08dfb3ed5809104"},
+    {file = "winsdk-1.0.0b6-cp310-cp310-win_amd64.whl", hash = "sha256:c0352706fa68cd28064f82b934ec709494e8f32efda23bf8f92e452ec2543df8"},
+    {file = "winsdk-1.0.0b6-cp37-cp37m-win32.whl", hash = "sha256:daef8d49c653a516430ac681f92ff28f96b2ff2f11fa805f8b2073b1a5864f2f"},
+    {file = "winsdk-1.0.0b6-cp37-cp37m-win_amd64.whl", hash = "sha256:20e384b50dbc2bd360dbfd33804be78679337ed4a31afb376abb9ddfae453010"},
+    {file = "winsdk-1.0.0b6-cp38-cp38-win32.whl", hash = "sha256:410c2323af51c8e11c41bc88e431b9dc22b6aa9a1f36d45ad758170cc9fed098"},
+    {file = "winsdk-1.0.0b6-cp38-cp38-win_amd64.whl", hash = "sha256:493eeb3807d2a50c4c203420a4cea55a83a675b53ab1309f3be3fda09ff143fe"},
+    {file = "winsdk-1.0.0b6-cp39-cp39-win32.whl", hash = "sha256:01886275aae8842135c0029e4c249b88356f6df95b1ff522ba2ac01647c01e4b"},
+    {file = "winsdk-1.0.0b6-cp39-cp39-win_amd64.whl", hash = "sha256:22048f379d46232961b1d98fed467a8603f6f9c138750a1e310f12063d340207"},
+    {file = "winsdk-1.0.0b6.tar.gz", hash = "sha256:c72248967311145d6544744d98aaf413161f24ec6e0849c3bfa86565ab2100cd"},
 ]

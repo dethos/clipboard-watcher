@@ -7,8 +7,8 @@ authors = ["Gonçalo Valério <gon@ovalerio.net>"]
 [tool.poetry.dependencies]
 python = ">=3.9,<3.11"
 python-xlib = "^0.31"
-dbus-python = "^1.2.18"
 psutil = "^5.9.0"
+desktop-notifier = "^3.4.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"

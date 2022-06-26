@@ -43,6 +43,12 @@ def main() -> None:
         "Monitors the access of other processes to the clipboard contents."
     )
     parser.add_argument("-l", "--loglevel", help="Choose the log level")
+    parser.add_argument(
+        "-p",
+        "--permission",
+        action="store_true",
+        help="Ask for permission before sending clipboard data",
+    )
     args = parser.parse_args()
     if args.loglevel and args.loglevel in ["DEBUG", "INFO", "WARNING", "ERROR"]:
         set_logger_settings(args.loglevel)
@@ -63,7 +69,9 @@ def main() -> None:
     job_queue = Queue()
     # Thread 1
     event_worker = Thread(
-        target=process_event_loop, args=(disp, window, job_queue, cb_data), daemon=True
+        target=process_event_loop,
+        args=(disp, window, job_queue, cb_data, args.permission),
+        daemon=True,
     )
     # Thread 2
     notif_worker = Thread(
