@@ -242,14 +242,12 @@ def process_event_loop(d, w, q: Queue, cb_data, permission=False) -> None:
             proc_info = ProcessInfo.collect(req_pid) if req_pid else None
 
             if permission and d.get_atom_name(e.target) != "TARGETS":
-                if ask_for_permission(req_name, proc_info.pid, proc_info.path):
-                    data = cb_data
-                else:
-                    data = FakeData({}, {})
-            else:
-                data = cb_data
+                if not ask_for_permission(req_name, proc_info.pid, proc_info.path):
+                    fake_data = FakeData({}, {})
+                    process_selection_request_event(d, fake_data, e)
+                    continue
 
-            process_selection_request_event(d, data, e)
+            process_selection_request_event(d, cb_data, e)
             if d.get_atom_name(e.target) != "TARGETS":
                 q.put(
                     {
